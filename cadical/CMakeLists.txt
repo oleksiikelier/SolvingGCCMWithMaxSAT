@@ -1,0 +1,16 @@
+file(GLOB_RECURSE CADICAL RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/*)
+add_library (cadical ${CADICAL})
+message("cmake for cadical")
+
+add_definitions(-DVERSIONC="3.0.1")
+add_definitions(-DNBUILD)
+add_definitions(-DNDEBUG)
+add_definitions(-DQUIET)
+#add_definitions(-DNCONTRACTS)
+#add_definitions(-DNTRACING)
+#add_definitions(-DLOGGING)
+add_definitions(-DNCLOSEFROM)
+set (CMAKE_BUILD_TYPE Release)
+
+set_target_properties(cadical PROPERTIES LINKER_LANGUAGE CXX)
+target_include_directories(cadical PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
