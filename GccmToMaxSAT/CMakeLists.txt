@@ -6,8 +6,12 @@ message("cmake for ${projectName}")
 project(${projectName})
 
 find_package(networkit CONFIG QUIET)
-add_executable(${projectName} src/main.cpp
-)
+add_executable(${projectName}
+        src/main.cpp
+        src/BooleanEncoder.cpp
+        src/BooleanEncoder.h
+        src/utils.cpp
+        src/utils.h)
 target_link_libraries(${projectName} LINK_PUBLIC EvalMaxSAT MaLib cadical bz2 networkit pblib)
 
 target_include_directories(${projectName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)

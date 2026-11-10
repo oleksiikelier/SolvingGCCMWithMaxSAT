@@ -237,7 +237,7 @@ Solution<int> compute_heuristic_solution(Grover::Graph& graph, const NetworKit::
     return {ls_group, ls_score};
 }
 
-std::vector<int> compute_initial_distances(const std::vector<int>& dists) {
+std::vector<int> computeInitialDistances(const std::vector<int>& dists) {
     std::vector<int> initial_d = dists;
     for (int& d : initial_d) {
         d = std::max(d + 1, 2);
@@ -258,11 +258,11 @@ void solve_exact(Graph& graph, NetworKit::Graph& nk_graph, const Config& config,
         
         std::cout << "Init Score: " << score << "\n";
         heuristic_solution = {init_group, score};
-        initial_d = compute_initial_distances(dists);
+        initial_d = computeInitialDistances(dists);
     } else if (config.use_heuristic) {
         heuristic_solution = compute_heuristic_solution(graph, nk_graph, config.k);
         std::vector<int> dists = graph.get_min_dist_to(heuristic_solution.vertex_set);
-        initial_d = compute_initial_distances(dists);
+        initial_d = computeInitialDistances(dists);
     }
 
     TimePoint dist_start = Clock::now();
