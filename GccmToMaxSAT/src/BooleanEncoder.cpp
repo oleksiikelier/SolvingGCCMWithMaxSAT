@@ -5,9 +5,24 @@
 #include "BooleanEncoder.h"
 #include "utils.h"
 
-BooleanEncoder::BooleanEncoder(const Grover::Graph &graph, bool verbose) {
+BooleanEncoder::BooleanEncoder(const Grover::Graph &graph, PBConfig &config, bool verbose) {
     graph_ = graph;
     verbose_ = verbose;
+    pb2cnf = std::make_unique<PB2CNF>(config);
+};
+//______________________________________________________________________________________________________________________
+
+void BooleanEncoder::resetEncoder(PBConfig &config) {
+    lastXVar = 1;
+    nextVar = 1;
+
+    hardClauses.clear();
+    softClauses.clear();
+    //new_in_suff_set.clear();
+    variables.clear();
+
+    pb2cnf = std::make_unique<PB2CNF>(config);
+    //pb2cnf.reset();
 }
 
 //______________________________________________________________________________________________________________________
@@ -41,6 +56,7 @@ void BooleanEncoder::preprocessGraph(NetworKit::Graph &nkGraph, const int k, boo
     << std::endl;
 
     mapVariables();
+
 }
 
 //______________________________________________________________________________________________________________________
@@ -72,6 +88,7 @@ void BooleanEncoder::mapVariables() {
 //______________________________________________________________________________________________________________________
 
 void BooleanEncoder::encodeObjectiveFunction() {
+    const TimePoint encodingStart = Clock::now();
 
     for (int v = 0; v < graph_.r_n; ++v) {
 
@@ -84,6 +101,20 @@ void BooleanEncoder::encodeObjectiveFunction() {
         for (; i <= graph_.d(v); ++i) {
             softClauses.emplace_back(-variables.at({v, i}), graph_.c(v, i));
         }
+    }
+
+    if (verbose_) {
+        std::cout
+        << "(encodeObjectiveFunction) Time: "
+        << elapsedSeconds(encodingStart, Clock::now())
+        << " (s)"
+        << std::endl;
+
+        std::cout
+        << "(encodeObjectiveFunction) Number of soft clauses after encoding: "
+        << softClauses.size()
+        << "\n"
+        << std::endl;
     }
 
 }
@@ -109,25 +140,27 @@ void BooleanEncoder::encodeExactlyOneConstraint() {
             continue;
         }
 
+
         hardClauses.push_back(literals);
+
         if (literals.size() > 1) {
-            nextVar = pb2_cnf.encodeAtMostK(literals, 1, hardClauses, nextVar) + 1;
+            nextVar = pb2cnf->encodeAtMostK(literals, 1, hardClauses, nextVar) + 1;
         }
         literals.clear();
     }
 
     if (verbose_) {
         std::cout
-        << "Encoding of the ExactlyOne constraint (Seconds): "
+        << "(encodeExactlyOneConstraint) Time: "
         << elapsedSeconds(encodingStart, Clock::now())
-        << "\n"
+        << " (s)"
         << std::endl;
 
         std::cout
-        << "(encodeExactlyOneConstraint) Number of hard clauses so far: "
+        << "(encodeExactlyOneConstraint) Number of hard clauses after encoding: "
         << hardClauses.size()
+        << "\n"
         << std::endl;
-
     }
 
 
@@ -136,10 +169,6 @@ void BooleanEncoder::encodeExactlyOneConstraint() {
 //______________________________________________________________________________________________________________________
 
 void BooleanEncoder::encodeExactlyKConstraint(const int k) {
-
-    if (k <= 0 || k > graph_.get_num_verts()) {
-        std::cerr << "Error: wrong k value. k must be in range 0 < k < n" << std::endl;
-    }
 
     const TimePoint encodingStart = Clock::now();
     std::vector<int32_t> literals;
@@ -154,21 +183,22 @@ void BooleanEncoder::encodeExactlyKConstraint(const int k) {
     }
 
 
-    nextVar = pb2_cnf.encodeAtMostK(literals, k, hardClauses, nextVar) + 1;
-    nextVar = pb2_cnf.encodeAtLeastK(literals, k, hardClauses, nextVar) + 1;
+    nextVar = pb2cnf->encodeAtMostK(literals, k, hardClauses, nextVar) + 1;
+    nextVar = pb2cnf->encodeAtLeastK(literals, k, hardClauses, nextVar) + 1;
 
     literals.clear();
 
     if (verbose_) {
         std::cout
-        << "Encoding of the ExactlyK (k = " << k << ") constraint: (Seconds): "
+        << "(encodeExactlyKConstraint) (k = " << k << ") Time: "
         << elapsedSeconds(encodingStart, Clock::now())
-        << "\n"
+        << " (s)"
         << std::endl;
 
         std::cout
-        << "(encodeExactlyKConstraint) Number of hard clauses so far: "
+        << "(encodeExactlyKConstraint) Number of hard clauses after encoding: "
         << hardClauses.size()
+        << "\n"
         << std::endl;
 
     }
@@ -204,15 +234,20 @@ void BooleanEncoder::encodeAtLeastOneConstraint() {
 
     if (verbose_) {
         std::cout
-        << "(encodeAtLeastOneConstraint) Number of hard clauses so far: "
-        << hardClauses.size()
+        << "(encodeAtLeastOneConstraint) Time: "
+        << elapsedSeconds(encodingStart, Clock::now())
+        << " (s)"
         << std::endl;
 
         std::cout
-        << "Encoding of the AtLeastOne constraint (Seconds): "
-        << elapsedSeconds(encodingStart, Clock::now())
+        << "(encodeAtLeastOneConstraint) Number of hard clauses after encoding: "
+        << hardClauses.size()
         << "\n"
         << std::endl;
+
     }
 }
+
+
+
 

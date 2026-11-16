@@ -31,8 +31,7 @@ class BooleanEncoder {
         // Graph object with V, A and D sets as defined in paper.
         Grover::Graph graph_;
 
-        // Constraints encoder.
-        PB2CNF pb2_cnf;
+        std::unique_ptr<PB2CNF> pb2cnf;
 
         // Helps to aovid the usage of the unnecessary vertices.
         std::vector<bool> new_in_suff_set;
@@ -41,12 +40,14 @@ class BooleanEncoder {
 
         std::vector<std::vector<int32_t>> hardClauses;
 
-        BooleanEncoder(const Grover::Graph &graph, bool verbose);
+        BooleanEncoder(const Grover::Graph &graph, PBConfig &config, bool verbose);
 
         ~BooleanEncoder()= default;
 
         // Maps variables x_v_i to variables inside the solver.
         void mapVariables();
+
+        void resetEncoder(PBConfig &config);
 
         void preprocessGraph(NetworKit::Graph &nkGraph, int k, bool useHeuristic=false);
 

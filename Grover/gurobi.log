@@ -1,0 +1,40 @@
+
+Gurobi 13.0.3 (mac64[arm], gurobi_cl) logging started Wed Nov 11 14:41:42 2026
+
+Set parameter Username
+Set parameter LicenseID to value 2883115
+Set parameter LogFile to value "gurobi.log"
+Using license file /Users/macbook/gurobi.lic
+Academic license - for non-commercial use only - expires 2027-11-10
+
+Gurobi Optimizer version 13.0.3 build v13.0.3rc0 (mac64[arm] - Darwin 23.6.0 23J631)
+Copyright (c) 2026, Gurobi Optimization, LLC
+
+Read MPS format model from file /Library/gurobi1303/macos_universal2/examples/data/afiro.mps
+Reading time = 0.00 seconds
+AFIRO: 27 rows, 32 columns, 83 nonzeros
+
+Using Gurobi shared library /Library/gurobi1303/macos_universal2/lib/libgurobi130.dylib
+
+CPU model: Apple M2 Max
+Thread count: 12 physical cores, 12 logical processors, using up to 12 threads
+
+Optimize a model with 27 rows, 32 columns and 83 nonzeros (Min)
+Model fingerprint: 0x092217cc
+Model has 5 linear objective coefficients
+Coefficient statistics:
+  Matrix range     [1e-01, 2e+00]
+  Objective range  [3e-01, 1e+01]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [4e+01, 5e+02]
+
+Presolve removed 21 rows and 23 columns
+Presolve time: 0.00s
+Presolved: 6 rows, 9 columns, 26 nonzeros
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0   -5.2218703e+02   5.976175e+01   0.000000e+00      0s
+       2   -4.6475314e+02   0.000000e+00   0.000000e+00      0s
+
+Solved in 2 iterations and 0.00 seconds (0.00 work units)
+Optimal objective -4.647531429e+02

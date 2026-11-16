@@ -138,7 +138,7 @@ std::vector<int> load_initial_solution(const std::string& filename, int expected
     return group;
 }
 
-Graph load_graph(const std::string& filename, bool use_sufficient_set, bool use_reductions) {
+Grover::Graph load_graph(const std::string& filename, bool use_sufficient_set, bool use_reductions) {
     std::ifstream stream(filename);
     if (!stream.is_open()) {
         std::cerr << "Error: Cannot open graph file: " << filename << "\n";
@@ -146,7 +146,7 @@ Graph load_graph(const std::string& filename, bool use_sufficient_set, bool use_
     }
 
     TimePoint start = Clock::now();
-    Graph graph;
+    Grover::Graph graph;
     graph << stream;
     graph.use_suff = use_sufficient_set;
     graph.use_redu = use_reductions;
@@ -156,10 +156,10 @@ Graph load_graph(const std::string& filename, bool use_sufficient_set, bool use_
     return graph;
 }
 
-NetworKit::Graph convert_to_networkit(const Graph& graph) {
+NetworKit::Graph convert_to_networkit(const Grover::Graph& graph) {
     NetworKit::Graph nk_graph;
     nk_graph.addNodes(graph.get_num_verts());
-    for (const Edge& edge : graph.adj_array) {
+    for (const Grover::Edge& edge : graph.adj_array) {
         nk_graph.addEdge(edge.source, edge.target, 1, true);
     }
     return nk_graph;
@@ -175,7 +175,7 @@ void solve_k1(const NetworKit::Graph& graph, TimePoint start_time) {
     std::cout << "Elapsed Time (Seconds): " << elapsed_seconds(start_time, Clock::now()) << "\n";
 }
 
-void solve_approx(Graph& graph, NetworKit::Graph& nk_graph, int k, TimePoint start_time) {
+void solve_approx(Grover::Graph& graph, NetworKit::Graph& nk_graph, int k, TimePoint start_time) {
     TimePoint greedy_start = Clock::now();
     NetworKit::GroupCloseness greedy(nk_graph, k, 0);
     greedy.run();
@@ -245,7 +245,7 @@ std::vector<int> computeInitialDistances(const std::vector<int>& dists) {
     return initial_d;
 }
 
-void solve_exact(Graph& graph, NetworKit::Graph& nk_graph, const Config& config, TimePoint start_time) {
+void solve_exact(Grover::Graph& graph, NetworKit::Graph& nk_graph, const Config& config, TimePoint start_time) {
     graph.compute_reduction(nk_graph);
 
     Solution<int> heuristic_solution;
@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
     Aux::Log::setLogLevel("ERROR");
     
     Config config = parse_args(argc, argv);
-    Graph graph = load_graph(config.graph_file, config.use_sufficient_set, config.use_reductions);
+    Grover::Graph graph = load_graph(config.graph_file, config.use_sufficient_set, config.use_reductions);
     
     TimePoint start_time = Clock::now();
 

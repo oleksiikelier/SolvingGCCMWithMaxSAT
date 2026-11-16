@@ -90,6 +90,16 @@ public:
         for (;;) {
             Solution<T> solution = solve_model();
 
+            std::cout << "\n----------CUSTOM DEBUGGING----------\n";
+            std::cout << "Score at the iteration " << iters << ": " << solution.score << std::endl;
+            std::cout << "Solution at the iteration " << iters << ": ";
+
+            for (const auto vertex: solution.vertex_set) {
+                std:: cout << vertex << " ";
+            }
+            std::cout << "\n----------CUSTOM DEBUGGING----------\n" << std::endl;
+
+
             iters++;
 
             if (variables_sufficient()) {
@@ -168,7 +178,7 @@ private:
                 GRBLinExpr x_v_i = model->getVarByName(name(v, i));
                 GRBLinExpr upper = 0;
 
-                for (NodeID w : graph.vertsAtDist[v][i]) {
+                for (Grover::NodeID w : graph.vertsAtDist[v][i]) {
                     w = graph.rtranslate[w];
                     if (w == -1) continue;
 
@@ -250,7 +260,7 @@ private:
     }
 
     void add_variables() {
-        std::vector<NodeID> advanceBFSNodes;
+        std::vector<Grover::NodeID> advanceBFSNodes;
         std::vector<int> d_inc(reduced_n, 0); // could use bool vector
 
         for (int v = 0; v < reduced_n; ++v) {
@@ -285,7 +295,7 @@ private:
             GRBLinExpr x_v_dvminus1 = model->getVarByName(name(v, graph.d(v)-1));
 
             GRBLinExpr upper = 0;
-            for (NodeID w : graph.vertsAtDist[v][graph.d(v)-1]) {
+            for (Grover::NodeID w : graph.vertsAtDist[v][graph.d(v)-1]) {
                 w = graph.rtranslate[w];
                 if (w == -1) continue;
 
@@ -311,7 +321,7 @@ private:
     }
 
     // use reference since copying is expensive
-    Graph& graph;
+    Grover::Graph& graph;
     size_t k;
     size_t n;
     size_t reduced_n;

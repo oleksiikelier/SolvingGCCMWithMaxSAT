@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 4.0)
 
 project(Grover)
 
@@ -30,7 +30,7 @@ include_directories(
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
 
 # Release flags
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -finline-functions -fwhole-program -ftree-vectorize -flto -funroll-loops -falign-loops -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -finline-functions -ftree-vectorize -flto -funroll-loops -falign-loops -march=native")
 
 file(GLOB_RECURSE sources src/*.cpp src/*.h)
 
@@ -39,7 +39,7 @@ add_executable(grover main.cpp ${sources})
 target_link_libraries(
     grover
     ${GUROBI_ROOT}/lib/libgurobi_c++.a
-    ${GUROBI_ROOT}/lib/libgurobi120.so
-    ${NETWORKIT_ROOT}/lib/libnetworkit.so
+    ${GUROBI_ROOT}/lib/libgurobi130.dylib
+    ${NETWORKIT_ROOT}/lib/libnetworkit.dylib
 )
 
