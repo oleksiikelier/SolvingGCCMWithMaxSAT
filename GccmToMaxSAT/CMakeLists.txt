@@ -11,7 +11,9 @@ add_executable(${projectName}
         src/BooleanEncoder.cpp
         src/BooleanEncoder.h
         src/utils.cpp
-        src/utils.h)
+        src/utils.h
+        src/GccmSolver.cpp
+        src/GccmSolver.h)
 target_link_libraries(${projectName} LINK_PUBLIC EvalMaxSAT MaLib cadical bz2 networkit pblib)
 
 target_include_directories(${projectName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)

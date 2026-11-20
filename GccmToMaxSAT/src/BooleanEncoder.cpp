@@ -5,14 +5,21 @@
 #include "BooleanEncoder.h"
 #include "utils.h"
 
-BooleanEncoder::BooleanEncoder(const Grover::Graph &graph, PBConfig &config, bool verbose) {
+BooleanEncoder::BooleanEncoder(const Grover::Graph &graph, EncodingsTuple const &encodings, bool verbose) {
+
     graph_ = graph;
     verbose_ = verbose;
-    pb2cnf = std::make_unique<PB2CNF>(config);
+
+    pbLibConfig = std::make_shared<PBConfigClass>();
+    pbLibConfig->amk_encoder = encodings.first;
+    pbLibConfig->amo_encoder = encodings.second;
+
+    pb2cnf = std::make_unique<PB2CNF>(pbLibConfig);
+
 };
 //______________________________________________________________________________________________________________________
 
-void BooleanEncoder::resetEncoder(PBConfig &config) {
+void BooleanEncoder::resetEncoder() {
     lastXVar = 1;
     nextVar = 1;
 
@@ -21,8 +28,8 @@ void BooleanEncoder::resetEncoder(PBConfig &config) {
     //new_in_suff_set.clear();
     variables.clear();
 
-    pb2cnf = std::make_unique<PB2CNF>(config);
-    //pb2cnf.reset();
+    pb2cnf = std::make_unique<PB2CNF>(pbLibConfig);
+    mapVariables();
 }
 
 //______________________________________________________________________________________________________________________
@@ -204,6 +211,7 @@ void BooleanEncoder::encodeExactlyKConstraint(const int k) {
     }
 
 }
+//______________________________________________________________________________________________________________________
 
 void BooleanEncoder::encodeAtLeastOneConstraint() {
 
@@ -248,6 +256,18 @@ void BooleanEncoder::encodeAtLeastOneConstraint() {
     }
 }
 
+//______________________________________________________________________________________________________________________
+std::vector<int32_t> BooleanEncoder::getVariables() {
+    std::vector<int32_t> obj;
+    obj.reserve(variables.size());
 
+    for (const auto &[k, v] : variables) {
+        obj.push_back(v);
+    }
 
-
+    return obj;
+}
+//______________________________________________________________________________________________________________________
+int BooleanEncoder::getNumberOfUsedVarialbes() const{
+    return nextVar;
+}

@@ -9,8 +9,9 @@
 #include "pblib/pb2cnf.h"
 
 
-using Tuple = std::pair<int, int>;
-using Dictionary = std::map<Tuple, int>;
+using IntTuple = std::pair<int, int>;
+using EncodingsTuple = std::pair<AMK_ENCODER::PB2CNF_AMK_Encoder, AMO_ENCODER::PB2CNF_AMO_Encoder>;
+using Dictionary = std::map<IntTuple, int>;
 
 
 class BooleanEncoder {
@@ -18,11 +19,6 @@ class BooleanEncoder {
     public:
 
         bool verbose_;
-
-        // Keeping track of the used variables in constraints helps to avoid confusion,
-        // since encodings are adding auxiliary variables.
-        int lastXVar = 1;
-        int nextVar = 1;
 
         // Mapping of the x_v_i variables in the ILP
         // to the specific variable which will be used in the constraint.
@@ -33,23 +29,29 @@ class BooleanEncoder {
 
         std::unique_ptr<PB2CNF> pb2cnf;
 
+        //std::unique_ptr<PBConfigClass>
+        PBConfig pbLibConfig;
+
         // Helps to aovid the usage of the unnecessary vertices.
         std::vector<bool> new_in_suff_set;
 
-        std::vector<Tuple> softClauses;
+        std::vector<IntTuple> softClauses;
 
         std::vector<std::vector<int32_t>> hardClauses;
 
-        BooleanEncoder(const Grover::Graph &graph, PBConfig &config, bool verbose);
+        BooleanEncoder(const Grover::Graph &graph, EncodingsTuple const &encodings, bool verbose);
 
         ~BooleanEncoder()= default;
 
         // Maps variables x_v_i to variables inside the solver.
         void mapVariables();
 
-        void resetEncoder(PBConfig &config);
+        void resetEncoder();
 
         void preprocessGraph(NetworKit::Graph &nkGraph, int k, bool useHeuristic=false);
+
+        // Returns variables of the objective function
+        std::vector<int32_t> getVariables();
 
         void encodeObjectiveFunction();
 
@@ -58,6 +60,14 @@ class BooleanEncoder {
         void encodeExactlyOneConstraint();
 
         void encodeAtLeastOneConstraint();
+
+        [[nodiscard]] int getNumberOfUsedVarialbes() const;
+
+    private:
+        // Keeping track of the used variables in constraints helps to avoid confusion,
+        // since encodings are adding auxiliary variables.
+        int lastXVar = 1;
+        int nextVar = 1;
 
 };
 
