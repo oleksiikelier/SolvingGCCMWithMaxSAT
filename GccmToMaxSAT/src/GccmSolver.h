@@ -38,7 +38,7 @@ public:
 
     void resetSolver();
 
-    void solve(int k, NetworKit::Graph const &originalGraph, BooleanEncoder &encoder);
+    void solve(int k, bool encodeExactAsAtMost, NetworKit::Graph const &originalGraph, BooleanEncoder &encoder);
 
     void precomputeEccs(NetworKit::Graph const &originalGraph, BooleanEncoder const &encoder);
 

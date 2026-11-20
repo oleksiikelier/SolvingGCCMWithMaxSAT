@@ -172,6 +172,42 @@ void BooleanEncoder::encodeExactlyOneConstraint() {
 
 
 }
+//______________________________________________________________________________________________________________________
+
+void BooleanEncoder::encodeAtMostKConstraint(const int k) {
+    const TimePoint encodingStart = Clock::now();
+    std::vector<int32_t> literals;
+
+    for (int v = 0; v < graph_.r_n; ++v) {
+
+        if (!new_in_suff_set[v]) {
+            continue;
+        }
+
+        literals.push_back(variables.at({v, 0}));
+    }
+
+    nextVar = pb2cnf->encodeAtMostK(literals, k, hardClauses, nextVar) + 1;
+    literals.clear();
+
+    if (verbose_) {
+        std::cout
+        << "(encodeAtMostKConstraint) (k = " << k << ") Time: "
+        << elapsedSeconds(encodingStart, Clock::now())
+        << " (s)"
+        << std::endl;
+
+        std::cout
+        << "(encodeAtMostKConstraint) Number of hard clauses after encoding: "
+        << hardClauses.size()
+        << "\n"
+        << std::endl;
+
+    }
+
+
+}
+
 
 //______________________________________________________________________________________________________________________
 

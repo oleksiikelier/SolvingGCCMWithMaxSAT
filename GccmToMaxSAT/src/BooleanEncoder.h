@@ -61,6 +61,8 @@ class BooleanEncoder {
 
         void encodeAtLeastOneConstraint();
 
+        void encodeAtMostKConstraint(int k);
+
         [[nodiscard]] int getNumberOfUsedVarialbes() const;
 
     private:

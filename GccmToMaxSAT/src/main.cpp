@@ -14,10 +14,17 @@
 
 #include "GccmSolver.h"
 
-
-static EncodingsTuple parseArguments(int argc, char *argv[]) {
-
+struct Configuration {
+    // eaam = exact as at most
+    bool encodeExactAsAtMost = false;
+    bool useHeuristic = false;
+    bool verbose = false;
     EncodingsTuple encodings;
+};
+
+static Configuration parseArguments(int argc, char *argv[]) {
+
+    Configuration cfg;
 
     for (int i = 3; i < argc; i++) {
         std::string arg = argv[i];
@@ -27,11 +34,11 @@ static EncodingsTuple parseArguments(int argc, char *argv[]) {
             std::string amkEncoder = argv[++i];
 
             if (amkEncoder == "card") {
-                encodings.first = AMK_ENCODER::CARD;
+                cfg.encodings.first = AMK_ENCODER::CARD;
             }
 
             else if (amkEncoder == "bdd") {
-                encodings.first = AMK_ENCODER::BDD;
+                cfg.encodings.first = AMK_ENCODER::BDD;
             }
 
             else {
@@ -47,25 +54,25 @@ static EncodingsTuple parseArguments(int argc, char *argv[]) {
             std::string amoEncoder = argv[++i];
 
             if (amoEncoder == "bdd") {
-                encodings.second = AMO_ENCODER::BDD;
+                cfg.encodings.second = AMO_ENCODER::BDD;
             }
             else if (amoEncoder == "kproduct") {
-                encodings.second = AMO_ENCODER::KPRODUCT;
+                cfg.encodings.second = AMO_ENCODER::KPRODUCT;
             }
             else if (amoEncoder == "bimmander") {
-                encodings.second = AMO_ENCODER::BIMANDER;
+                cfg.encodings.second = AMO_ENCODER::BIMANDER;
             }
             else if (amoEncoder == "commander") {
-                encodings.second = AMO_ENCODER::COMMANDER;
+                cfg.encodings.second = AMO_ENCODER::COMMANDER;
             }
             else if (amoEncoder == "binary") {
-                encodings.second = AMO_ENCODER::BINARY;
+                cfg.encodings.second = AMO_ENCODER::BINARY;
             }
             else if (amoEncoder == "nested") {
-                encodings.second = AMO_ENCODER::NESTED;
+                cfg.encodings.second = AMO_ENCODER::NESTED;
             }
             else if (amoEncoder == "pairwise") {
-                encodings.second = AMO_ENCODER::PAIRWISE;
+                cfg.encodings.second = AMO_ENCODER::PAIRWISE;
             }
             else {
                 std::cerr << "Error: unknown encoding type for the AMO constraint: " << amoEncoder << std::endl;
@@ -74,9 +81,19 @@ static EncodingsTuple parseArguments(int argc, char *argv[]) {
 
             std::cout << "AMO encoder: " << amoEncoder << std::endl;
         }
+
+        else if (arg == "--eaam") {
+            cfg.encodeExactAsAtMost = true;
+        }
+        else if(arg == "--heuristic") {
+            cfg.useHeuristic = true;
+        }
+        else if (arg == "--verbose") {
+            cfg.verbose = true;
+        }
     }
 
-    return encodings;
+    return cfg;
 }
 
 static void printHelp() {
@@ -88,6 +105,10 @@ static void printHelp() {
     std::cout << "--amo <encoding>      Use <encoding> to encode the AT MOST ONE constraint.\n";
     std::cout << "                      <encoding> can take following values: bdd, bimmander,\n";
     std::cout << "                      commander, binary, nested, pairwise, kproduct\n\n";
+    std::cout << "--eaam                Encode =k constraint as <= k.\n\n";
+    std::cout << "--heuristic           Instead of setting d(v) = 2, use a heuristic solution as a starting point.\n\n";
+    std::cout << "--verbose             Print additional information during the solving process.\n\n";
+
 }
 
 int main(int argc, char *argv[]) {
@@ -116,11 +137,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    auto chosenEncodings = parseArguments(argc, argv);
-    BooleanEncoder encoder(graph, chosenEncodings, true);
-    encoder.preprocessGraph(graphNk, k, false);
+    auto cfg = parseArguments(argc, argv);
+    BooleanEncoder encoder(graph, cfg.encodings, cfg.verbose);
+    encoder.preprocessGraph(graphNk, k, cfg.useHeuristic);
 
     GccmSolver gccmSolver;
-    gccmSolver.solve(k, graphNk, encoder);
+    gccmSolver.solve(k, cfg.encodeExactAsAtMost, graphNk, encoder);
 
 }

@@ -39,7 +39,7 @@ void GccmSolver::addNewVariables(const int n) const {
 void GccmSolver::precomputeEccs(NetworKit::Graph const &originalGraph, BooleanEncoder const &encoder) {
 
     TimePoint eccTime = Clock::now();
-    
+
     // Original size of the graph should be used, since we can hit
     // a vertex which can have a potentially bigger index in the originalgraph  than in the reduced one
     cachedEccs.reserve(encoder.graph_.n);
@@ -60,7 +60,7 @@ void GccmSolver::precomputeEccs(NetworKit::Graph const &originalGraph, BooleanEn
     << std::endl;
 }
 
-void GccmSolver::solve(int k, NetworKit::Graph const &originalGraph, BooleanEncoder &encoder) {
+void GccmSolver::solve(int k, bool encodeExactAsAtMost, NetworKit::Graph const &originalGraph, BooleanEncoder &encoder) {
 
     // Needed for f(S) computation
     NetworKit::GroupCloseness gc(originalGraph);
@@ -74,8 +74,15 @@ void GccmSolver::solve(int k, NetworKit::Graph const &originalGraph, BooleanEnco
     while (iteration < MAX_NUMBER_OF_ITERATIONS) {
 
         encoder.encodeObjectiveFunction();
+
         // (5a)
-        encoder.encodeExactlyKConstraint(k);
+        if (encodeExactAsAtMost) {
+            encoder.encodeAtMostKConstraint(k);
+        }
+        else {
+            encoder.encodeExactlyKConstraint(k);
+        }
+
         // (5b)
         encoder.encodeExactlyOneConstraint();
         // (5c)
