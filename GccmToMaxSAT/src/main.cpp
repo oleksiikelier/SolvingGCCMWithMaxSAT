@@ -90,7 +90,6 @@ static void printHelp() {
     std::cout << "                      commander, binary, nested, pairwise, kproduct\n\n";
 }
 
-
 int main(int argc, char *argv[]) {
 
     if (argc < 3) {

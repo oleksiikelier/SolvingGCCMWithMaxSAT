@@ -22,7 +22,7 @@ public:
 
     [[nodiscard]] std::vector<NetworKit::node> getSolution(BooleanEncoder const &encoder) const;
 
-    std::vector<Grover::NodeID> getNodesToAdvance(BooleanEncoder &encoder, NetworKit::Graph const &originalGraph) const;
+    std::vector<Grover::NodeID> getNodesToAdvance(BooleanEncoder &encoder) const;
 
     // Adds n new variables to the solver
     void addNewVariables(int n) const;
@@ -40,6 +40,8 @@ public:
 
     void solve(int k, NetworKit::Graph const &originalGraph, BooleanEncoder &encoder);
 
+    void precomputeEccs(NetworKit::Graph const &originalGraph, BooleanEncoder const &encoder);
+
     static void printStats(t_weight cost, t_weight farness, size_t iteration);
 
     static void printSolution(std::vector<NetworKit::node> const &solution);
@@ -49,7 +51,7 @@ private:
     const size_t MAX_NUMBER_OF_VARIABLES = 100'000;
     const size_t MAX_NUMBER_OF_ITERATIONS = 32;
 
-    std::vector<unsigned long long> eccs;
+    std::vector<uint64_t> cachedEccs;
 
 };
 

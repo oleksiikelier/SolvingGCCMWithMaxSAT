@@ -222,7 +222,6 @@ void BooleanEncoder::encodeAtLeastOneConstraint() {
     {
         for (int i = 1; i <= graph_.d(v) - 1; ++i)
         {
-
             std::vector<int32_t> clause{-variables.at({v, i})};
 
             for (auto w: graph_.vertsAtDist[v][i])

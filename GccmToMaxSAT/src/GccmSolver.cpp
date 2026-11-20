@@ -36,10 +36,38 @@ void GccmSolver::addNewVariables(const int n) const {
 
 }
 
+void GccmSolver::precomputeEccs(NetworKit::Graph const &originalGraph, BooleanEncoder const &encoder) {
+
+    TimePoint eccTime = Clock::now();
+    
+    // Original size of the graph should be used, since we can hit
+    // a vertex which can have a potentially bigger index in the originalgraph  than in the reduced one
+    cachedEccs.reserve(encoder.graph_.n);
+
+    for (int v = 0; v < encoder.graph_.r_n; ++v) {
+        auto inOriginalGraph = encoder.graph_.translate[v];
+        // Returns std::pair where first is the furthest vertex and second is the distance to this vertex (ecc)
+        auto pair = NetworKit::Eccentricity::getValue(originalGraph, inOriginalGraph);
+
+        // unsigned long long is too much for now
+        cachedEccs[inOriginalGraph] = pair.second;
+    }
+
+    std::cout
+    << "\nTime for computing eccs: "
+    << elapsedSeconds(eccTime, Clock::now())
+    << "(s)\n"
+    << std::endl;
+}
+
 void GccmSolver::solve(int k, NetworKit::Graph const &originalGraph, BooleanEncoder &encoder) {
 
     // Needed for f(S) computation
     NetworKit::GroupCloseness gc(originalGraph);
+
+    // Instead of computing it in every iteration, precompute once and use them later.
+    // Shouldn't cause any problems since the graph itself does not change during the loop.
+    precomputeEccs(originalGraph, encoder);
 
     std :: cout << "-----------Starting the main loop-----------\n" << std::endl;;
 
@@ -76,7 +104,7 @@ void GccmSolver::solve(int k, NetworKit::Graph const &originalGraph, BooleanEnco
         //
 
         std::vector<NetworKit::node> solution = getSolution(encoder);
-        std::vector<Grover::NodeID> nodesToAdvance = getNodesToAdvance(encoder, originalGraph);
+        std::vector<Grover::NodeID> nodesToAdvance = getNodesToAdvance(encoder);
         auto farness = static_cast<t_weight>(gc.computeFarness(solution));
 
         printSolution(solution);
@@ -124,20 +152,17 @@ std::vector<NetworKit::node> GccmSolver::getSolution(BooleanEncoder const &encod
     return solution;
 }
 
-std::vector<Grover::NodeID> GccmSolver::getNodesToAdvance(
-    BooleanEncoder &encoder, NetworKit::Graph const &originalGraph
-    ) const {
+std::vector<Grover::NodeID> GccmSolver::getNodesToAdvance(BooleanEncoder &encoder) const {
 
     std::vector<Grover::NodeID> nodesToAdvance;
 
     for (int v = 0; v < encoder.graph_.r_n; ++v) {
 
-        auto [_, ecc] =
-            NetworKit::Eccentricity::getValue(originalGraph, encoder.graph_.translate[v]);
-
         auto dv = encoder.graph_.d(v);
         auto lit = encoder.variables.at({v, dv});
+        auto ecc = cachedEccs[encoder.graph_.translate[v]];
 
+        // Early exit condintion: x_v_dv = 1 && ecc > d(v)
         if (solver->getValue(lit) && ecc > dv) {
             nodesToAdvance.push_back(v);
         }
