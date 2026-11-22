@@ -1,11 +1,27 @@
 //
 // Created by alex on 19.11.26.
 //
-#include "GccmSolver.h"
+// SILENCE LIBRARY WARNINGS
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wall"
+#pragma clang diagnostic ignored "-Wextra"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#endif
 
+#include "GccmSolver.h"
 #include "utils.h"
+#include "../satsuma/src/satsuma.h"
 #include "networkit/distance/Eccentricity.hpp"
 
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 void GccmSolver::addHardClauses(std::vector<std::vector<int32_t>> const &clauses) const {
 
@@ -54,7 +70,7 @@ void GccmSolver::precomputeEccs(NetworKit::Graph const &originalGraph, BooleanEn
     }
 
     std::cout
-    << "\nTime for computing eccs: "
+    << "Time for computing eccs: "
     << elapsedSeconds(eccTime, Clock::now())
     << "(s)\n"
     << std::endl;
@@ -69,9 +85,10 @@ void GccmSolver::solve(int k, bool encodeExactAsAtMost, NetworKit::Graph const &
     // Shouldn't cause any problems since the graph itself does not change during the loop.
     precomputeEccs(originalGraph, encoder);
 
-    std :: cout << "-----------Starting the main loop-----------\n" << std::endl;;
+    std :: cout << "----------- Starting the main loop -----------\n" << std::endl;;
 
     while (iteration < MAX_NUMBER_OF_ITERATIONS) {
+        std :: cout << "---------------- Iteration # " << iteration << " ---------------\n" << std::endl;;
 
         encoder.encodeObjectiveFunction();
 
@@ -89,12 +106,29 @@ void GccmSolver::solve(int k, bool encodeExactAsAtMost, NetworKit::Graph const &
         encoder.encodeAtLeastOneConstraint();
 
         const int n  = encoder.getNumberOfUsedVarialbes();
-
         std::cout << "Creating " << n << " new variables" << std::endl;
         addNewVariables(n);
 
-        std::cout << "\nAdding " << encoder.hardClauses.size() << " hard clauses" << std::endl;
-        addHardClauses(encoder.hardClauses);
+        //
+        if (useSymBreaking) {
+
+            TimePoint breakingStart = Clock::now();
+            auto symBreak = breakSymmetries(n - 1, encoder.hardClauses, false);
+
+            std::cout << "\nNumber of variables before symmetry breaking: " << n - 1 << std::endl;
+            std::cout << "Number of clauses before symmetry breaking: " << encoder.hardClauses.size() << std::endl;
+            std::cout << "Number of variables after symmetry breaking: " << symBreak.nVars << std::endl;
+            std::cout << "Number of clauses after symmetry breaking: " << symBreak.clauses.size() << std::endl;
+            std::cout << "Time taken: " << elapsedSeconds(breakingStart, Clock::now()) << "(s)\n" << std::endl;
+            std::cout << "Adding " << symBreak.clauses.size() << " hard clauses" << std::endl;
+
+            addHardClauses(symBreak.clauses);
+        }
+        else {
+            std::cout << "\nAdding " << encoder.hardClauses.size() << " hard clauses" << std::endl;
+            addHardClauses(encoder.hardClauses);
+        }
+
 
         std::cout << "\nAdding " << encoder.softClauses.size() << " soft clauses\n" << std::endl;
         addSoftClauses(encoder.softClauses);
@@ -128,14 +162,14 @@ void GccmSolver::solve(int k, bool encodeExactAsAtMost, NetworKit::Graph const &
         << nodesToAdvance.size()
         << std::endl;
 
+        std :: cout << "\n---------------- End of Iteration # " << iteration << " ---------------\n" << std::endl;
+
         iteration++;
 
         encoder.graph_.advanceAllBFS(nodesToAdvance);
         encoder.resetEncoder();
         nodesToAdvance.clear();
         resetSolver();
-
-        std::cout << "\n--------------------------------\n\n";
     }
 
 }
@@ -195,4 +229,43 @@ void GccmSolver::printStats(t_weight cost, t_weight farness, size_t iteration) {
     std::cout << "f(S): " << farness << std::endl;
     std::cout << "Iteration: " << iteration << std::endl;
     std::cout << std::endl;
+}
+
+satsuma::SymBreakResult GccmSolver::breakSymmetries(const int nVars, std::vector<std::vector<int>> &clauses, const bool fixMode) {
+    satsuma::preprocessor p;
+
+    if (fixMode) {                      // same as `satsuma fix`
+        p.set_orbitopal_fixing(true);
+        p.set_orbitopal_fixing_only(true);
+        p.set_schreier_fixing(true);
+        p.set_negation_fixing(true);
+        p.set_reorder(true);
+        p.set_reorder_cliquer(true);
+        p.set_iterate(true);
+        p.set_preprocess_cnf_unit(true);
+        p.set_preprocess_cnf_pure(true);
+        // p.set_add_reduced_as_unit(true);  // see caveat below
+    }                                    // else: lex = defaults
+
+    std::ostream null_log(nullptr);      // discard logging
+    p.set_log_output(&null_log);
+
+    satsuma::tracker track;              // must be set, track is dereferenced unguarded
+    track.h_silent = true;
+    p.set_tracker(&track);
+
+    cnf2wl f;
+
+    f.reserve(nVars, static_cast<int>(clauses.size()));
+    for (auto& c : clauses) {
+        f.add_clause(c);
+    }   // may need a mutable copy
+
+    satsuma::SymBreakResult out;
+    p.set_result(&out);   // the patch below
+
+    p.preprocess(f);
+
+    return out;
+
 }

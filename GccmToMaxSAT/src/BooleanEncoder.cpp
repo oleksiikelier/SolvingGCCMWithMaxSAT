@@ -306,3 +306,49 @@ std::vector<int32_t> BooleanEncoder::getVariables() {
 int BooleanEncoder::getNumberOfUsedVarialbes() const{
     return nextVar;
 }
+//______________________________________________________________________________________________________________________
+void BooleanEncoder::saveHardClauses(const std::string &fileName) {
+
+    std::ofstream file(fileName);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: cannot open file " << fileName << "." << std::endl;
+    }
+
+    file << "p cnf " << nextVar - 1 << " " << hardClauses.size() << "\n";
+
+    for (const auto &clause : hardClauses) {
+        for (const auto &lit : clause) {
+            file << lit << " ";
+        }
+        file << 0 << "\n";
+    }
+
+    file.close();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

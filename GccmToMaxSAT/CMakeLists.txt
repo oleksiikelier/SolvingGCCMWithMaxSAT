@@ -18,7 +18,7 @@ target_link_libraries(${projectName} LINK_PUBLIC EvalMaxSAT MaLib cadical bz2 ne
 
 target_include_directories(${projectName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(GccmToMaxSAT PRIVATE "${CMAKE_SOURCE_DIR}/Grover/src")
-
+target_include_directories(GccmToMaxSAT PRIVATE "${CMAKE_SOURCE_DIR}/satsuma/src")
 
 install(TARGETS ${projectName}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

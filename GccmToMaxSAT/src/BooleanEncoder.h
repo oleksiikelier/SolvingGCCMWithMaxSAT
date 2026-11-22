@@ -37,7 +37,7 @@ class BooleanEncoder {
 
         std::vector<IntTuple> softClauses;
 
-        std::vector<std::vector<int32_t>> hardClauses;
+        std::vector<std::vector<int>> hardClauses;
 
         BooleanEncoder(const Grover::Graph &graph, EncodingsTuple const &encodings, bool verbose);
 
@@ -62,6 +62,8 @@ class BooleanEncoder {
         void encodeAtLeastOneConstraint();
 
         void encodeAtMostKConstraint(int k);
+
+        void saveHardClauses(const std::string &fileName);
 
         [[nodiscard]] int getNumberOfUsedVarialbes() const;
 

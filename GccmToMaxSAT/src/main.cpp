@@ -1,18 +1,33 @@
-#include "BooleanEncoder.h"
-#include "utils.h"
-
 #include "graph.h"
-
-#include "EvalMaxSAT/EvalMaxSAT.h"
-
-#include <networkit/graph/Graph.hpp>
-
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 
+#include "BooleanEncoder.h"
+#include "utils.h"
+
+// SILENCE LIBRARY WARNINGS
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wall"
+#pragma clang diagnostic ignored "-Wextra"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#endif
+
 #include "GccmSolver.h"
+#include "EvalMaxSAT/EvalMaxSAT.h"
+#include <networkit/graph/Graph.hpp>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 
 struct Configuration {
     // eaam = exact as at most
@@ -105,9 +120,11 @@ static void printHelp() {
     std::cout << "--amo <encoding>      Use <encoding> to encode the AT MOST ONE constraint.\n";
     std::cout << "                      <encoding> can take following values: bdd, bimmander,\n";
     std::cout << "                      commander, binary, nested, pairwise, kproduct\n\n";
+    std::cout << "--symbreak            Uses satsuma to preprocess the formula and break symmetries.\n\n";
     std::cout << "--eaam                Encode =k constraint as <= k.\n\n";
     std::cout << "--heuristic           Instead of setting d(v) = 2, use a heuristic solution as a starting point.\n\n";
     std::cout << "--verbose             Print additional information during the solving process.\n\n";
+
 
 }
 
@@ -124,7 +141,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    std :: cout << "\n-----------Loading and prepocessing-----------\n" << std::endl;
+    std :: cout << "\n----------- Loading and prepocessing ---------\n" << std::endl;
 
     // Load initial graph and create a NetworKit version of it.
     // Also creates groupCloseness object to compute f(S) later.

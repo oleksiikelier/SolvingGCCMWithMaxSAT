@@ -10,6 +10,7 @@
 
 #include "BooleanEncoder.h"
 #include "networkit/centrality/GroupCloseness.hpp"
+#include "../satsuma/src/satsuma.h"
 
 // Wrapper for EvalMaxSAT solver with some additional functionality.
 class GccmSolver : public EvalMaxSAT<> {
@@ -17,6 +18,7 @@ public:
     using EvalMaxSAT::EvalMaxSAT;
 
     size_t iteration = 1;
+    bool useSymBreaking = true;
 
     std::unique_ptr<EvalMaxSAT> solver = std::make_unique<EvalMaxSAT>();
 
@@ -41,6 +43,8 @@ public:
     void solve(int k, bool encodeExactAsAtMost, NetworKit::Graph const &originalGraph, BooleanEncoder &encoder);
 
     void precomputeEccs(NetworKit::Graph const &originalGraph, BooleanEncoder const &encoder);
+
+    static satsuma::SymBreakResult breakSymmetries(int nVars, std::vector<std::vector<int>> &clauses, bool fixMode);
 
     static void printStats(t_weight cost, t_weight farness, size_t iteration);
 
