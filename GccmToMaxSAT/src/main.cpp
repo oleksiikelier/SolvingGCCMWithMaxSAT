@@ -1,41 +1,14 @@
-#include "graph.h"
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 
+#include "graph.h"
+
+#include "EvalMaxSATSolver.h"
+#include "MaxSLIMSolver.h"
 #include "BooleanEncoder.h"
 #include "utils.h"
-
-// SILENCE LIBRARY WARNINGS
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wall"
-#pragma clang diagnostic ignored "-Wextra"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wall"
-#pragma GCC diagnostic ignored "-Wextra"
-#endif
-
-#include "GccmSolver.h"
-#include "EvalMaxSAT/EvalMaxSAT.h"
-#include <networkit/graph/Graph.hpp>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-
-
-struct Configuration {
-    // eaam = exact as at most
-    bool encodeExactAsAtMost = false;
-    bool useHeuristic = false;
-    bool verbose = false;
-    EncodingsTuple encodings;
-};
 
 static Configuration parseArguments(int argc, char *argv[]) {
 
@@ -106,6 +79,32 @@ static Configuration parseArguments(int argc, char *argv[]) {
         else if (arg == "--verbose") {
             cfg.verbose = true;
         }
+        else if (arg == "--symbreak") {
+            cfg.useSymBreaking = true;
+        }
+        else if (arg == "--slim") {
+            cfg.useMaxSLIM = true;
+        }
+        else if (arg == "--timeout") {
+            cfg.timeout = std::stoi(argv[++i]);
+            if (cfg.timeout <= 0) {
+                std::cerr << RED "Error: timeout for MaxSLIM needs to be a positive integer." RESET << std::endl;
+                exit(-1);
+            }
+        }
+        else if (arg == "--bin") {
+            cfg.maxSlimBinaryPath = argv[++i];
+        }
+        else if (arg == "--maxIters") {
+            cfg.maxNumberOfIterations = std::stoi(argv[++i]);
+            if (cfg.maxNumberOfIterations <= 0) {
+                std::cerr << RED "Error: max number of iterations should be a positive integer." RESET << std::endl;
+                exit(-1);
+            }
+        }
+        else if (arg == "--savewcnf") {
+            cfg.saveWcnf = true;
+        }
     }
 
     return cfg;
@@ -114,29 +113,48 @@ static Configuration parseArguments(int argc, char *argv[]) {
 static void printHelp() {
     std::cout << "\n\nUsage:\n";
     std::cout << "./cmake-build-debug/GccmToMaxSAT/GccmToMaxSAT <graph_file> k [OPTIONS]\n\n";
-    std::cout << "Options:\n";
+
+    std::cout << "General options:\n";
     std::cout << "--amk <encoding>      Use <encoding> to encode the AT MOST K constraint.\n";
     std::cout << "                      <encoding> can take following values: card, bdd.\n\n";
     std::cout << "--amo <encoding>      Use <encoding> to encode the AT MOST ONE constraint.\n";
     std::cout << "                      <encoding> can take following values: bdd, bimmander,\n";
     std::cout << "                      commander, binary, nested, pairwise, kproduct\n\n";
-    std::cout << "--symbreak            Uses satsuma to preprocess the formula and break symmetries.\n\n";
+    std::cout << "--verbose             Print additional information during the encoding process.\n\n";
     std::cout << "--eaam                Encode =k constraint as <= k.\n\n";
     std::cout << "--heuristic           Instead of setting d(v) = 2, use a heuristic solution as a starting point.\n\n";
-    std::cout << "--verbose             Print additional information during the solving process.\n\n";
+    std::cout << "--maxIters            Maximum number of iterations that solver is allowed to run. If optimal solution wasn't found\n\n";
 
+    std::cout << "EvalMaxSAT specific options:\n";
+    std::cout << "--symbreak            Uses satsuma to preprocess the formula and break symmetries.\n\n";
 
+    std::cout << "MaxSLIM specific options:\n";
+    std::cout << "--slim                Use MaxSLIM instead of EvalMaxSAT. Requires a compiled MaxSLIM binary.\n";
+    std::cout << "                      Path to the binary needs to be adjusted in GccmToMaxSAT/src/utils.h MAXSLIM_BIN.\n\n";
+    std::cout << "--bin                 If MaxSLIM is used it's mandatory to provide a timeout, since it's an anytime solver.\n\n";
+    std::cout << "                      solver returns the last found solution\n\n";
+    std::cout << "--savewcnf            Saves wcnf formula in each iteration in GccmSolver/src/wcnfs.\n";
+    std::cout << "                      If not specified, then solver uses temporary file. \n\n";
+    std::cout << "                      Currently only works with MaxSLIMSolver. \n\n";
+
+}
+
+static void printSolution(const std::vector<uint64_t> &solution) {
+    std::cout << "S = { ";
+    for (const auto &var: solution) {
+        std :: cout << var << " ";
+    }
+    std::cout << "}" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
 
+    if (strcmp(argv[1], "--help") == 0) {
+        printHelp();
+        return 0;
+    }
+
     if (argc < 3) {
-
-        if (strcmp(argv[1], "--help") == 0) {
-            printHelp();
-            return 0;
-        }
-
         std::cerr << "Usage: ./main <graph_file> k [OPTIONS]" << std::endl;
         return -1;
     }
@@ -144,8 +162,7 @@ int main(int argc, char *argv[]) {
     std :: cout << "\n----------- Loading and prepocessing ---------\n" << std::endl;
 
     // Load initial graph and create a NetworKit version of it.
-    // Also creates groupCloseness object to compute f(S) later.
-    Grover::Graph graph = loadGraph(argv[1]);
+    Grover::Graph graph = loadGraph(GRAPHS_FOLDER + argv[1]);
     NetworKit::Graph graphNk = convertToNetworKit(graph);
 
     const int k = std::stoi(argv[2]);
@@ -155,10 +172,27 @@ int main(int argc, char *argv[]) {
     }
 
     auto cfg = parseArguments(argc, argv);
-    BooleanEncoder encoder(graph, cfg.encodings, cfg.verbose);
+    BooleanEncoder encoder(graph, cfg.encodings, cfg.verbose, argv[1]);
     encoder.preprocessGraph(graphNk, k, cfg.useHeuristic);
 
-    GccmSolver gccmSolver;
-    gccmSolver.solve(k, cfg.encodeExactAsAtMost, graphNk, encoder);
 
+    TimePoint totalRuntime = Clock::now();
+
+    if (cfg.useMaxSLIM) {
+        MaxSlimSolver solver(cfg);
+        auto solution = solver.solve(k, graphNk, encoder);
+        solver.printLoggingTable();
+        printSolution(solution);
+    }
+    else {
+        EvalMaxSATSolver solver(cfg);
+        auto solution = solver.solve(k, graphNk, encoder);
+        solver.printLoggingTable();
+        printSolution(solution);
+    }
+
+
+    std::cout << "\nTotal time: " << elapsedSeconds(totalRuntime, Clock::now()) << "(s)" << std::endl;
+
+    return 0;
 }

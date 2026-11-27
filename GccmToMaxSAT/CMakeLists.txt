@@ -12,13 +12,22 @@ add_executable(${projectName}
         src/BooleanEncoder.h
         src/utils.cpp
         src/utils.h
-        src/GccmSolver.cpp
-        src/GccmSolver.h)
+        src/symmetry.cpp
+        src/symmetry.h
+        src/AbstractSolver.h
+        src/AbstractSolver.cpp
+        src/MaxSLIMSolver.h
+        src/MaxSLIMSolver.cpp
+        src/EvalMaxSATSolver.h
+        src/EvalMaxSATSolver.cpp)
 target_link_libraries(${projectName} LINK_PUBLIC EvalMaxSAT MaLib cadical bz2 networkit pblib)
 
 target_include_directories(${projectName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(GccmToMaxSAT PRIVATE "${CMAKE_SOURCE_DIR}/Grover/src")
 target_include_directories(GccmToMaxSAT PRIVATE "${CMAKE_SOURCE_DIR}/satsuma/src")
+target_include_directories(GccmToMaxSAT PRIVATE "${CMAKE_SOURCE_DIR}/src/dejavu")
+target_include_directories(GccmToMaxSAT PRIVATE "${CMAKE_SOURCE_DIR}/tabulate/include")
+
 
 install(TARGETS ${projectName}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

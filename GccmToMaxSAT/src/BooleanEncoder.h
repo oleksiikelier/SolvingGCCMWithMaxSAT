@@ -18,7 +18,14 @@ class BooleanEncoder {
 
     public:
 
+        size_t objectiveSize = 0;
+        size_t firstConstraintSize = 0;
+        size_t secondConstraintSize = 0;
+        size_t thirdConstraintSize = 0;
+
         bool verbose_;
+
+        std::string graphName_;
 
         // Mapping of the x_v_i variables in the ILP
         // to the specific variable which will be used in the constraint.
@@ -39,7 +46,7 @@ class BooleanEncoder {
 
         std::vector<std::vector<int>> hardClauses;
 
-        BooleanEncoder(const Grover::Graph &graph, EncodingsTuple const &encodings, bool verbose);
+        BooleanEncoder(const Grover::Graph &graph, EncodingsTuple const &encodings, bool verbose, const std::string &graphName);
 
         ~BooleanEncoder()= default;
 
@@ -52,6 +59,8 @@ class BooleanEncoder {
 
         // Returns variables of the objective function
         std::vector<int32_t> getVariables();
+
+        void encode(int k, bool encodeExactAsAtMost);
 
         void encodeObjectiveFunction();
 

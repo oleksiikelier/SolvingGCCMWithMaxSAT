@@ -5,17 +5,17 @@
 #include "BooleanEncoder.h"
 #include "utils.h"
 
-BooleanEncoder::BooleanEncoder(const Grover::Graph &graph, EncodingsTuple const &encodings, bool verbose) {
+BooleanEncoder::BooleanEncoder(const Grover::Graph &graph, EncodingsTuple const &encodings, bool verbose, const std::string &graphName) {
 
-    graph_ = graph;
-    verbose_ = verbose;
+    this->graph_ = graph;
+    this->verbose_ = verbose;
+    this->graphName_ = graphName;
 
     pbLibConfig = std::make_shared<PBConfigClass>();
     pbLibConfig->amk_encoder = encodings.first;
     pbLibConfig->amo_encoder = encodings.second;
 
     pb2cnf = std::make_unique<PB2CNF>(pbLibConfig);
-
 };
 //______________________________________________________________________________________________________________________
 
@@ -27,8 +27,8 @@ void BooleanEncoder::resetEncoder() {
     softClauses.clear();
     //new_in_suff_set.clear();
     variables.clear();
-
     pb2cnf = std::make_unique<PB2CNF>(pbLibConfig);
+
     mapVariables();
 }
 
@@ -48,7 +48,7 @@ void BooleanEncoder::preprocessGraph(NetworKit::Graph &nkGraph, const int k, boo
 
     if (useHeuristic) {
         Solution<int> heuristic_solution = computeHeuristicSolution(graph_, nkGraph, k);
-        std::vector<int> dists = graph_.get_min_dist_to(heuristic_solution.vertex_set);
+        std::vector<int> dists = graph_.get_min_dist_to(heuristic_solution.container);
         initial_d = computeInitialDistances(dists);
     }
 
@@ -106,19 +106,23 @@ void BooleanEncoder::encodeObjectiveFunction() {
         }
 
         for (; i <= graph_.d(v); ++i) {
+            auto weight = graph_.c(v, i);
+            if (weight== 0) {
+                continue;
+            }
             softClauses.emplace_back(-variables.at({v, i}), graph_.c(v, i));
         }
     }
 
     if (verbose_) {
         std::cout
-        << "(encodeObjectiveFunction) Time: "
+        << GREEN "(encodeObjectiveFunction)" RESET << " Time: "
         << elapsedSeconds(encodingStart, Clock::now())
         << " (s)"
         << std::endl;
 
         std::cout
-        << "(encodeObjectiveFunction) Number of soft clauses after encoding: "
+        << GREEN "(encodeObjectiveFunction)" RESET " Number of soft clauses after encoding: "
         << softClauses.size()
         << "\n"
         << std::endl;
@@ -158,13 +162,13 @@ void BooleanEncoder::encodeExactlyOneConstraint() {
 
     if (verbose_) {
         std::cout
-        << "(encodeExactlyOneConstraint) Time: "
+        << GREEN "(encodeExactlyOneConstraint)" RESET " Time: "
         << elapsedSeconds(encodingStart, Clock::now())
         << " (s)"
         << std::endl;
 
         std::cout
-        << "(encodeExactlyOneConstraint) Number of hard clauses after encoding: "
+        << GREEN "(encodeExactlyOneConstraint)" RESET " Number of hard clauses after encoding: "
         << hardClauses.size()
         << "\n"
         << std::endl;
@@ -192,13 +196,13 @@ void BooleanEncoder::encodeAtMostKConstraint(const int k) {
 
     if (verbose_) {
         std::cout
-        << "(encodeAtMostKConstraint) (k = " << k << ") Time: "
+        << GREEN "(encodeAtMostKConstraint)" RESET " (k = " << k << ") Time: "
         << elapsedSeconds(encodingStart, Clock::now())
         << " (s)"
         << std::endl;
 
         std::cout
-        << "(encodeAtMostKConstraint) Number of hard clauses after encoding: "
+        << GREEN "(encodeAtMostKConstraint)" RESET " Number of hard clauses after encoding: "
         << hardClauses.size()
         << "\n"
         << std::endl;
@@ -233,13 +237,13 @@ void BooleanEncoder::encodeExactlyKConstraint(const int k) {
 
     if (verbose_) {
         std::cout
-        << "(encodeExactlyKConstraint) (k = " << k << ") Time: "
+        << GREEN "(encodeExactlyKConstraint)" RESET " (k = " << k << ") Time: "
         << elapsedSeconds(encodingStart, Clock::now())
         << " (s)"
         << std::endl;
 
         std::cout
-        << "(encodeExactlyKConstraint) Number of hard clauses after encoding: "
+        << GREEN "(encodeExactlyKConstraint)" RESET " Number of hard clauses after encoding: "
         << hardClauses.size()
         << "\n"
         << std::endl;
@@ -277,13 +281,13 @@ void BooleanEncoder::encodeAtLeastOneConstraint() {
 
     if (verbose_) {
         std::cout
-        << "(encodeAtLeastOneConstraint) Time: "
+        << GREEN"(encodeAtLeastOneConstraint)" RESET " Time: "
         << elapsedSeconds(encodingStart, Clock::now())
         << " (s)"
         << std::endl;
 
         std::cout
-        << "(encodeAtLeastOneConstraint) Number of hard clauses after encoding: "
+        << GREEN "(encodeAtLeastOneConstraint)" RESET " Number of hard clauses after encoding: "
         << hardClauses.size()
         << "\n"
         << std::endl;
@@ -327,6 +331,28 @@ void BooleanEncoder::saveHardClauses(const std::string &fileName) {
     file.close();
 }
 
+void BooleanEncoder::encode(int k, bool encodeExactAsAtMost) {
+    encodeObjectiveFunction();
+    objectiveSize = this->softClauses.size();
+
+    // (5a)
+    if (encodeExactAsAtMost) {
+        // Alternative encoding as in Grover/src/iterative.h (5a with <=k instead of =k)
+        encodeAtMostKConstraint(k);
+    }
+    else {
+        encodeExactlyKConstraint(k);
+    }
+
+    firstConstraintSize = this->hardClauses.size();
+
+    // (5b)
+    encodeExactlyOneConstraint();
+    secondConstraintSize = this->hardClauses.size() - firstConstraintSize;
+    // (5c)
+    encodeAtLeastOneConstraint();
+    thirdConstraintSize = this->hardClauses.size() - secondConstraintSize - firstConstraintSize;
+}
 
 
 

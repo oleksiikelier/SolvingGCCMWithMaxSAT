@@ -19,15 +19,15 @@
 #include "proof.h"
 #include "tracker.h"
 
+// Part of the patch
+// ------
+#include "utils.h"
+// ------
 namespace satsuma {
     /**
      * \brief The satsuma preprocessor.
      *
      */
-    struct SymBreakResult {
-        int nVars = 0;
-        std::vector<std::vector<int>> clauses;
-    };
 
 
     class preprocessor {
@@ -397,8 +397,8 @@ namespace satsuma {
     public:
         // Custom patch to avoid writing solution in file
         //--------------------------------------------------------
-        SymBreakResult *mem_out = nullptr;
-        void set_result(SymBreakResult * r) {
+        Solution<std::vector<int>> *mem_out = nullptr;
+        void set_result(Solution<std::vector<int>> * r) {
             mem_out = r;
         }
         //--------------------------------------------------------
@@ -864,16 +864,16 @@ namespace satsuma {
                             cl.push_back(formula_db.literal_at_clause_pos(i, j));
                         }
 
-                        mem_out->clauses.push_back(cl);
+                        mem_out->container.push_back(cl);
                     }
 
                     for (int i = 0; i < sbp.n_clauses(); ++i) {
                         const auto& sc = sbp.get_clause(i);
-                        mem_out->clauses.emplace_back(sc.begin(), sc.end());
+                        mem_out->container.emplace_back(sc.begin(), sc.end());
                     }
 
                     for (int l : proof_fix_literals) {
-                        mem_out->clauses.push_back({l});
+                        mem_out->container.push_back({l});
                     }
 
                     break;
